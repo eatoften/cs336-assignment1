@@ -32,7 +32,6 @@ functions in [./tests/adapters.py](./tests/adapters.py).
 
 ### Download data
 Download the TinyStories data and a subsample of OpenWebText
-
 ``` sh
 mkdir -p data
 cd data
