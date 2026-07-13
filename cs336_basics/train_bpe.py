@@ -1,45 +1,86 @@
+import os
 import regex as re
+import multiprocessing
+from .pretokenization_example import find_chunk_boundaries
 
 
 def train_bpe(input_path, vocab_size, special_tokens):
-
-    with open(input_path, 'r', encoding = 'utf-8') as fp:
-        text = fp.read()
  
-    pat = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+    # pat = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
 
-    escaped_special_tokens = []
+    # escaped_special_tokens = []
 
-    for special_token in special_tokens:
-        escaped_special_tokens.append(re.escape(special_token))
+    # for special_token in special_tokens:
+    #     escaped_special_tokens.append(re.escape(special_token))
 
-    special_token_pattern = "|".join(escaped_special_tokens)
+    # special_token_pattern = "|".join(escaped_special_tokens)
 
-    if special_tokens:
-        text_chunks = re.split(special_token_pattern, text)
-    else:
-        text_chunks = [text]
-
-
-    strings = []
-    for chunk in text_chunks:
-        matches = re.finditer(pat, chunk)
-        for match in matches:
-            strings.append(match.group(0))
-    
-    encoded_segments = []
-    for segment in strings:
-        encoded_segment = segment.encode('utf-8', errors="replace")
-        encoded_segments.append(encoded_segment)
-    
     pre_token_counts = {}
 
-    for encoded_segment in encoded_segments:
-        byte_units = []
-        for byte_value in encoded_segment:
-            byte_units.append(bytes([byte_value]))
-        pre_token_tuple = tuple(byte_units)
-        pre_token_counts[pre_token_tuple] = pre_token_counts.get(pre_token_tuple,0) + 1
+    with open(input_path, "rb") as f:
+        num_processes = 4
+        if special_tokens:
+            boundaries = find_chunk_boundaries(f, num_processes, special_tokens[0].encode('utf-8'))
+        else:
+            f.seek(0, os.SEEK_END)
+            file_size = f.tell()
+            boundaries = [0,file_size]
+    
+    tasks = []
+    for start, end in zip(boundaries[:-1], boundaries[1:]):
+        tasks.append((input_path, start, end, special_tokens))
+    
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        local_counts_list = pool.starmap(worker, tasks)
+    
+    for local_counts in local_counts_list:
+        for local_tuple, local_frequency in local_counts.items():
+            pre_token_counts[local_tuple] = pre_token_counts.get(local_tuple,0) + local_frequency
+        # for start, end in zip(boundaries[:-1], boundaries[1:]):
+
+        #     local_counts = worker(input_path, start, end, special_tokens)
+        
+
+        #     for local_tuple, local_frequency in local_counts.items():
+        #         pre_token_counts[local_tuple] = pre_token_counts.get(local_tuple, 0) + local_frequency
+            
+
+        # 初始写法，占用过多内存
+    # strings = []
+    # for chunk in text_chunks:
+    #     matches = re.finditer(pat, chunk)
+    #     for match in matches:
+    #         strings.append(match.group(0))
+    
+    # encoded_segments = []
+    # for segment in strings:
+    #     encoded_segment = segment.encode('utf-8', errors="replace")
+    #     encoded_segments.append(encoded_segment)
+    
+    # pre_token_counts = {}
+
+    # for encoded_segment in encoded_segments:
+    #     byte_units = []
+    #     for byte_value in encoded_segment:
+    #         byte_units.append(bytes([byte_value]))
+    #     pre_token_tuple = tuple(byte_units)
+    #     pre_token_counts[pre_token_tuple] = pre_token_counts.get(pre_token_tuple,0) + 1
+    
+
+    # for chunk in text_chunks:
+    #     matches = re.finditer(pat, chunk)
+    #     for match in matches:
+    #         string = match.group(0)
+    #         encoded_segment = string.encode('utf-8', errors="replace")
+    #         byte_units = []
+
+    #         for byte_value in encoded_segment:
+    #             byte_units.append(bytes([byte_value]))
+
+    #         pre_token_tuple = tuple(byte_units)
+    #         pre_token_counts[pre_token_tuple] = pre_token_counts.get(pre_token_tuple,0) + 1
+
+
 
     #索引：pair_locations：
     #         top_pair → 哪些 pre-token 包含它
@@ -127,6 +168,46 @@ def train_bpe(input_path, vocab_size, special_tokens):
 
         pre_token_counts = new_pre_token_counts
     return vocab, merges
+
+
+def worker(input_path,start, end,special_tokens):
+    pat = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+
+    escaped_special_tokens = []
+
+    for special_token in special_tokens:
+        escaped_special_tokens.append(re.escape(special_token))
+
+    special_token_pattern = "|".join(escaped_special_tokens)
+
+    pre_token_counts = {}
+
+    with open(input_path, "rb") as f:
+
+        f.seek(start)
+        chunk = f.read(end - start).decode("utf-8", errors="ignore")
+
+        if special_tokens:
+            text_chunks = re.split(special_token_pattern, chunk)
+        else:
+            text_chunks = [chunk]
+    
+        for text_piece in text_chunks:
+            matches = re.finditer(pat, text_piece)
+            for match in matches:
+                string = match.group(0)
+                encoded_segment = string.encode('utf-8', errors="replace")
+                byte_units = []
+
+                for byte_value in encoded_segment:
+                    byte_units.append(bytes([byte_value]))
+
+                pre_token_tuple = tuple(byte_units)
+                pre_token_counts[pre_token_tuple] = pre_token_counts.get(pre_token_tuple,0) + 1
+    return pre_token_counts
+
+
+
 
 def get_adjacent_pair(pre_token_tuple):
     adjacent_pair = []
