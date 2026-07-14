@@ -6,12 +6,12 @@ from cs336_basics.train_bpe import train_bpe
 
 if __name__ == "__main__":
     start_time = time.perf_counter()
-    vocab, merges = train_bpe("./data/TinyStoriesV2-GPT4-train.txt",10000,["<|endoftext|>"])
+    vocab, merges = train_bpe("./data/owt_train.txt",32000,["<|endoftext|>"])
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
-    with open("./data/tinystories_train_vocab.pkl","wb") as fp:
+    with open("./data/owt_train_vocab.pkl","wb") as fp:
         pickle.dump(vocab,fp)
-    with open("./data/tinystories_train_merges.pkl", "wb") as fp:
+    with open("./data/owt_train_merges.pkl", "wb") as fp:
         pickle.dump(merges,fp)
 
     longest_token = max(vocab.values(), key = len)
