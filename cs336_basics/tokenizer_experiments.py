@@ -31,25 +31,25 @@ if __name__ == "__main__":
     #     "./data/tinystories_train_vocab.pkl",
     #     "./data/tinystories_train_merges.pkl")
     
-    #TinyStories train
-    build_tokenize_dataset(
-        "./data/TinyStoriesV2-GPT4-train.txt",
-        "./data/tinystories_train_tokens.npy",
-        "./data/tinystories_train_vocab.pkl",
-        "./data/tinystories_train_merges.pkl")
-
-    #OWT valid
-    build_tokenize_dataset(
-        "./data/owt_valid.txt",
-        "./data/owt_valid_tokens.npy",
-        "./data/owt_train_vocab.pkl",
-        "./data/owt_train_merges.pkl"
-    )
-
-    # #OWT train
+    # #TinyStories train
     # build_tokenize_dataset(
-    #     "./data/owt_train.txt",
-    #     "./data/owt_train_tokens.npy",
+    #     "./data/TinyStoriesV2-GPT4-train.txt",
+    #     "./data/tinystories_train_tokens.npy",
+    #     "./data/tinystories_train_vocab.pkl",
+    #     "./data/tinystories_train_merges.pkl")
+
+    # #OWT valid
+    # build_tokenize_dataset(
+    #     "./data/owt_valid.txt",
+    #     "./data/owt_valid_tokens.npy",
     #     "./data/owt_train_vocab.pkl",
     #     "./data/owt_train_merges.pkl"
     # )
+
+    #OWT train
+    build_tokenize_dataset(
+        "./data/owt_train.txt",
+        "./data/owt_train_tokens.npy",
+        "./data/owt_train_vocab.pkl",
+        "./data/owt_train_merges.pkl"
+    )
