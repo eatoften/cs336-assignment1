@@ -24,7 +24,7 @@ if __name__ == "__main__":
     warmup_iters = 2
     cosine_cycle_iters = 10
     max_l2_norm = 1.0
-    device = "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float32
     eval_iters = 5
 
@@ -77,6 +77,9 @@ if __name__ == "__main__":
                                 context_length=context_length,
                                 device=device
         )
+        print("selected device:", device)
+        print("model device:", next(model.parameters()).device)
+        print("batch device:", input_ids.device)
 
         optimizer.zero_grad()
         logits = model(input_ids)
