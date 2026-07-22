@@ -1,5 +1,6 @@
 import argparse
 import json
+import time
 from pathlib import Path
 
 import torch
@@ -112,6 +113,11 @@ if __name__ == "__main__":
 
     prompt_ids = tokenizer.encode(args.prompt)
 
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+
+    generation_start = time.perf_counter()
+
     generated_ids = generate_token_ids(
         model=model,
         prompt_ids=prompt_ids,
@@ -122,13 +128,27 @@ if __name__ == "__main__":
         top_p=args.top_p,
     )
 
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+
+    generation_seconds = time.perf_counter() - generation_start
+
+    num_generated_tokens = len(generated_ids) - len(prompt_ids)
+
+    if generation_seconds > 0:
+        tokens_per_second = num_generated_tokens / generation_seconds
+    else:
+        tokens_per_second = float("inf")
+
     generated_text = tokenizer.decode(
         generated_ids
     )
 
     print("\n--- Generation settings ---")
     print("prompt tokens:", len(prompt_ids))
-    print("generated tokens:", len(generated_ids) - len(prompt_ids))
+    print("generated tokens:", num_generated_tokens)
+    print(f"generation time: {generation_seconds:.4f} seconds")
+    print(f"throughput: {tokens_per_second:.2f} tokens/second")
     print("eos id:", eos_id)
 
     print("\n--- Generated text ---")

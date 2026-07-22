@@ -1,0 +1,29 @@
+{
+  "experiment": "tinystories_lr_3e-4",
+  "seed": 42,
+  "vocab_size": 10000,
+  "context_length": 256,
+  "d_model": 512,
+  "num_layers": 4,
+  "num_heads": 16,
+  "d_ff": 1344,
+  "rope_theta": 10000,
+  "batch_size": 8,
+  "max_iters": 500,
+  "max_learning_rate": 0.0003,
+  "min_learning_rate": 3e-05,
+  "warmup_iters": 50,
+  "cosine_cycle_iters": 499,
+  "max_l2_norm": 1.0,
+  "eval_iters": 20,
+  "betas": [
+    0.9,
+    0.95
+  ],
+  "adam_eps": 1e-08,
+  "weight_decay": 0.01,
+  "device": "cuda",
+  "dtype": "torch.float32",
+  "log_interval": 25,
+  "eval_interval": 100
+}
