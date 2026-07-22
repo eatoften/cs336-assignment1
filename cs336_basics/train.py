@@ -22,17 +22,18 @@ if __name__ == "__main__":
     d_ff = 1344
     rope_theta = 10000
     batch_size = 8
-    max_iters = 500
-    max_learning_rate = 0.0003
-    min_learning_rate = 0.00003
-    warmup_iters = 50
+    max_iters = 160000
+    max_learning_rate = 0.001
+    min_learning_rate = 0.0001
+    warmup_iters = 16000
     cosine_cycle_iters = max_iters - 1
     max_l2_norm = 1.0
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float32
     eval_iters = 20
-    log_interval = 25
-    eval_interval = 100
+    log_interval = 500
+    eval_interval = 2000
+    checkpoint_interval = 10000
 
     betas = (0.9, 0.95)
     adam_eps = 1e-8
@@ -43,7 +44,7 @@ if __name__ == "__main__":
     torch.manual_seed(seed=seed)
 
     config = {
-        "experiment": "tinystories_lr_3e-4",
+        "experiment": "tinystories_baseline_327m",
         "seed": seed,
         "vocab_size": vocab_size,
         "context_length": context_length,
@@ -67,6 +68,7 @@ if __name__ == "__main__":
         "dtype": str(dtype),
         "log_interval": log_interval,
         "eval_interval": eval_interval,
+        "checkpoint_interval": checkpoint_interval
     }
 
     train_data = np.load(
@@ -100,13 +102,15 @@ if __name__ == "__main__":
 
 
     run_name = datetime.now().strftime(
-        "tinystories_lr_3e-4_%Y%m%d_%H%M%S"
+        "tinystories_baseline_327m_%Y%m%d_%H%M%S"
     )
 
     logger = ExperimentLogger(
         run_name=run_name,
         config=config,
     )
+
+    checkpoint_path = logger.run_dir / "checkpoint_latest.pt"
 
     start_time = time.perf_counter()
 
@@ -208,20 +212,26 @@ if __name__ == "__main__":
                 "lr:", current_lr,
             )
 
+        if step % checkpoint_interval == 0:
+            save_checkpoint(model=model,
+                            optimizer=optimizer,
+                            iteration=step,
+                            out=checkpoint_path)
+
 
     elapsed_time = time.perf_counter() - start_time
     print("elapsed_time:", elapsed_time)
     print("validation loss:", mean_validation_loss)
 
-    # checkpoint_path = logger.run_dir / "checkpoint.pt"
+    checkpoint_path = logger.run_dir / "checkpoint.pt"
 
-    # save_checkpoint(
-    #     model,
-    #     optimizer,
-    #     max_iters,
-    #     checkpoint_path,
-    # )
+    save_checkpoint(
+        model,
+        optimizer,
+        max_iters,
+        checkpoint_path,
+    )
 
-    # print("checkpoint saved")
+    print("checkpoint saved")
 
     logger.close()

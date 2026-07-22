@@ -166,3 +166,5 @@ data/
 
 # Large experiment checkpoints
 runs/**/checkpoint.pt
+
+runs/**/checkpoint_latest.pt
