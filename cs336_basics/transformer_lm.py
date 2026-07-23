@@ -37,11 +37,32 @@ class TransformerLM(nn.Module):
         self.ln_final = RMSNorm(d_model,device=device,dtype=dtype)
         self.lm_head = Linear(d_model,vocab_size,device=device,dtype=dtype)
 
-    def forward(self,in_indices):
+    def forward(self,in_indices, token_positions=None, past_key_values=None, use_cache=False):
+        if use_cache and past_key_values is None:
+            past_key_values = [None for _ in self.layers]
+        elif past_key_values is not None:
+            if len(past_key_values) != len(self.layers):
+                raise ValueError("Invalid past_key_values")
+        
+        present_key_values = []
+
         hidden_states = self.token_embeddings(in_indices)
-        for layer in self.layers:
-            hidden_states = layer(hidden_states)
+        for layer_index, layer in enumerate(self.layers):
+            if use_cache is False:
+                hidden_states = layer(hidden_states,
+                                      token_positions=token_positions)
+            else:
+                layer_past_key_value = past_key_values[layer_index]
+                hidden_states, present_key_value = layer(hidden_states,
+                                                          token_positions=token_positions,
+                                                          past_key_value=layer_past_key_value,
+                                                          use_cache=True)
+                present_key_values.append(present_key_value)
+
         normalized = self.ln_final(hidden_states)
         logits = self.lm_head(normalized)
-        return logits
-        
+        if use_cache is False:
+            return logits
+        else:
+            return logits, present_key_values
+            
